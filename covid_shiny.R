@@ -9,7 +9,10 @@ curl <- "https://covid.ourworldindata.org/data/ecdc/full_data.csv"
 fdfile <- "full_data.csv"
 download.file(curl,fdfile)
 
-full_data <- fread('full_data.csv',showProgress = F)
+#full_data <- fread('full_data.csv',showProgress = F)
+full_data <- fread('full_data.csv',showProgress = F,drop=c(7:10))
+
+full_data[is.na(full_data)] <- 0
 
 full_data <- full_data[location != "International"]
 
@@ -75,16 +78,16 @@ server <- function(input, output){
   
   output$plot = renderPlot({
       plot_data <- plot_data() %>%
-                   mutate(ma5 = SMA(get(input$item),n = min(c(5,length(get(input$item)))))) %>% 
-                   mutate(ma25 = SMA(get(input$item),n = min(c(25,length(get(input$item))))))
+                   mutate(ma7 = SMA(get(input$item),n = min(c(7,length(get(input$item)))))) %>% 
+                   mutate(ma28 = SMA(get(input$item),n = min(c(28,length(get(input$item))))))
 
       g = ggplot(plot_data,aes(x=days))+
           geom_line(aes(y=get(input$item),fill = input$item,colour = input$item),size=1)+
           ylab(input$item)+
-          geom_line(aes(y=ma5,color = "ma5"),size=1)+
-          geom_line(aes(y=ma25,color = "ma25"),size=1)+
+          geom_line(aes(y=ma7,color = "ma7"),size=1)+
+          geom_line(aes(y=ma28,color = "ma28"),size=1)+
           scale_color_manual(name = "",
-                             breaks=c(input$item, "ma5", "ma25"),
+                             breaks=c(input$item, "ma7", "ma28"),
                              values = c("green","red","blue")
                              )+
           ggtitle(paste0("Covid19 Situation  ",max(plot_data$date)))+
@@ -99,7 +102,8 @@ server <- function(input, output){
   })
   output$dynamic <- renderDataTable(plot_data(),
                                     options = list(lengthMenu = c(5, 10, 25, 50),
-                                                   pageLength = 5))
+                                                   pageLength = 5,
+                                                   order=list(list(1,'desc'))))
 }
 
 shinyApp(ui = ui, server = server)
